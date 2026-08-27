@@ -1,102 +1,129 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
-  getFirestore, doc, onSnapshot, updateDoc, increment, collection, addDoc, query, orderBy, limit 
+  getFirestore, 
+  doc, 
+  onSnapshot, 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  increment, 
+  query, 
+  orderBy, 
+  limit 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBilt3cnrN3UtNY_DbwVi7LtHSnz8-x4CE",
-  authDomain: "fun-money-f4820.firebaseapp.com",
-  projectId: "fun-money-f4820",
-  storageBucket: "fun-money-f4820-firebasestorage.app",
-  messagingSenderId: "507596731983",
-  appId: "1:507596731983:web:f9713394294088ae865c3a"
-};
-
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase using global config loaded from config.js
+const app = initializeApp(window.firebaseConfig);
 const db = getFirestore(app);
 
-let currentType = 'spend';
+// DOM Elements
+const hisBalanceEl = document.getElementById("his-balance");
+const herBalanceEl = document.getElementById("her-balance");
+const transactionForm = document.getElementById("transaction-form");
+const accountSelect = document.getElementById("account-select");
+const amountInput = document.getElementById("amount-input");
+const descriptionInput = document.getElementById("description-input");
+const recentActivityEl = document.getElementById("recent-activity");
+const typeSpendBtn = document.getElementById("type-spend");
+const typeDepositBtn = document.getElementById("type-deposit");
 
-window.setTxType = (type) => {
-  currentType = type;
-  const spendBtn = document.getElementById('btn-spend');
-  const depositBtn = document.getElementById('btn-deposit');
-  const submitBtn = document.getElementById('submit-btn');
+let currentType = "spend"; // Default transaction type
 
-  if (type === 'spend') {
-    spendBtn.className = 'type-btn active-spend';
-    depositBtn.className = 'type-btn';
-    submitBtn.innerText = 'Log Expense';
-    submitBtn.style.background = '#0284c7';
-  } else {
-    spendBtn.className = 'type-btn';
-    depositBtn.className = 'type-btn active-deposit';
-    submitBtn.innerText = 'Log Deposit';
-    submitBtn.style.background = '#16a34a';
-  }
-};
+// Toggle Spend / Deposit Buttons
+if (typeSpendBtn && typeDepositBtn) {
+  typeSpendBtn.addEventListener("click", () => {
+    currentType = "spend";
+    typeSpendBtn.classList.add("active");
+    typeDepositBtn.classList.remove("active");
+  });
+
+  typeDepositBtn.addEventListener("click", () => {
+    currentType = "deposit";
+    typeDepositBtn.classList.add("active");
+    typeSpendBtn.classList.remove("active");
+  });
+}
 
 // 1. Real-Time Balances Listener
-onSnapshot(doc(db, "accounts", "balances"), (docSnap) => {
+const balancesDocRef = doc(db, "accounts", "balances");
+onSnapshot(balancesDocRef, (docSnap) => {
   if (docSnap.exists()) {
     const data = docSnap.data();
-    document.getElementById("his-balance").innerText = `$${(data.his || 0).toFixed(2)}`;
-    document.getElementById("her-balance").innerText = `$${(data.her || 0).toFixed(2)}`;
+    if (hisBalanceEl) hisBalanceEl.textContent = `$${(data.his || 0).toFixed(2)}`;
+    if (herBalanceEl) herBalanceEl.textContent = `$${(data.her || 0).toFixed(2)}`;
   }
 });
 
-// 2. Real-Time Activity Feed
-const q = query(collection(db, "transactions"), orderBy("timestamp", "desc"), limit(10));
-onSnapshot(q, (snapshot) => {
-  const listEl = document.getElementById("tx-list");
-  listEl.innerHTML = "";
-  
-  snapshot.forEach((doc) => {
-    const tx = doc.data();
-    const li = document.createElement("li");
-    li.className = `tx-item ${tx.user}`;
-    
-    const isSpend = tx.type === 'spend' || !tx.type;
-    const sign = isSpend ? '-' : '+';
-    const amountClass = isSpend ? 'spend' : 'deposit';
+// 2. Real-Time Recent Activity Listener
+const transactionsQuery = query(
+  collection(db, "transactions"),
+  orderBy("timestamp", "desc"),
+  limit(10)
+);
 
-    li.innerHTML = `
-      <div>
-        <div class="tx-desc">${tx.desc}</div>
-        <div class="tx-user">${tx.user === 'his' ? "Brent's Account" : "Ryann's Account"}</div>
+onSnapshot(transactionsQuery, (snapshot) => {
+  if (!recentActivityEl) return;
+  recentActivityEl.innerHTML = "";
+
+  snapshot.forEach((docSnap) => {
+    const item = docSnap.data();
+    const isHis = item.user === "his";
+    const accountLabel = isHis ? "BRENT'S ACCOUNT" : "RYANN'S ACCOUNT";
+    const accentClass = isHis ? "border-his" : "border-her";
+    
+    const isDeposit = item.type === "deposit";
+    const amountPrefix = isDeposit ? "+" : "-";
+    const amountClass = isDeposit ? "text-green" : "text-white";
+
+    const card = document.createElement("div");
+    card.className = `activity-card ${accentClass}`;
+    card.innerHTML = `
+      <div class="activity-info">
+        <div class="activity-title">${item.desc || "Transaction"}</div>
+        <div class="activity-account">${accountLabel}</div>
       </div>
-      <div class="tx-amount ${amountClass}">${sign}$${Math.abs(tx.amount).toFixed(2)}</div>
+      <div class="activity-amount ${amountClass}">
+        ${amountPrefix}$${parseFloat(item.amount).toFixed(2)}
+      </div>
     `;
-    listEl.appendChild(li);
+    recentActivityEl.appendChild(card);
   });
 });
 
-// 3. Form Submit Handler
-document.getElementById("money-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  
-  const user = document.getElementById("user-select").value;
-  const rawAmount = parseFloat(document.getElementById("amount").value);
-  const desc = document.getElementById("description").value;
-  
-  const adjustment = currentType === 'spend' ? -rawAmount : rawAmount;
+// 3. Handle Form Submission
+if (transactionForm) {
+  transactionForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  try {
-    await updateDoc(doc(db, "accounts", "balances"), {
-      [user]: increment(adjustment)
-    });
+    const selectedAccount = accountSelect.value; // 'his' or 'her'
+    const rawAmount = parseFloat(amountInput.value);
+    const description = descriptionInput.value.trim();
 
-    await addDoc(collection(db, "transactions"), {
-      user,
-      type: currentType,
-      amount: rawAmount,
-      desc,
-      timestamp: new Date()
-    });
+    if (isNaN(rawAmount) || rawAmount <= 0 || !description) return;
 
-    document.getElementById("amount").value = "";
-    document.getElementById("description").value = "";
-  } catch (err) {
-    alert("Error saving transaction: " + err.message);
-  }
-});
+    // Calculate balance change (+ for deposit, - for spend)
+    const balanceChange = currentType === "deposit" ? rawAmount : -rawAmount;
+
+    try {
+      // Update balance atomically
+      await updateDoc(balancesDocRef, {
+        [selectedAccount]: increment(balanceChange)
+      });
+
+      // Add to transaction log
+      await addDoc(collection(db, "transactions"), {
+        user: selectedAccount,
+        type: currentType,
+        amount: rawAmount,
+        desc: description,
+        timestamp: new Date()
+      });
+
+      // Reset Form Inputs
+      amountInput.value = "";
+      descriptionInput.value = "";
+    } catch (err) {
+      console.error("Error submitting transaction:", err);
+    }
+  });
+}
