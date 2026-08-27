@@ -75,11 +75,23 @@ onSnapshot(txQuery, (snapshot) => {
     const amountClass = isSpend ? "spend" : "deposit";
     const amountSign = isSpend ? "-" : "+";
 
+    // Format timestamp from Firestore Timestamp or JS Date
+    let timeStr = "";
+    if (item.timestamp) {
+      const dateObj = item.timestamp.toDate ? item.timestamp.toDate() : new Date(item.timestamp);
+      timeStr = dateObj.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+      });
+    }
+
     li.className = `tx-item ${accountClass}`;
     li.innerHTML = `
       <div>
         <div class="tx-desc">${item.desc}</div>
-        <div class="tx-user">${accountName}</div>
+        <div class="tx-user">${accountName} • ${timeStr}</div>
       </div>
       <div class="tx-amount ${amountClass}">${amountSign}$${parseFloat(item.amount).toFixed(2)}</div>
     `;
