@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Fun Money Tracker</title>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0284c7">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 16px; margin: 0; }
+    h1 { font-size: 1.4rem; text-align: center; color: #94a3b8; margin-top: 0; margin-bottom: 16px; }
+    
+    /* Dashboard Cards */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .card { padding: 16px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
+    .card.his { background: #1e293b; border-top: 4px solid #38bdf8; }
+    .card.her { background: #1e293b; border-top: 4px solid #f472b6; }
+    .card-title { font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card.his .card-title { color: #38bdf8; }
+    .card.her .card-title { color: #f472b6; }
+    .balance { font-size: 1.75rem; font-weight: 800; margin-top: 8px; color: #fff; }
+
+    /* Action Form */
+    form { display: flex; flex-direction: column; gap: 12px; background: #1e293b; padding: 16px; border-radius: 12px; border: 1px solid #334155; }
+    .type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+    .type-btn { padding: 10px; background: #0f172a; border: 1px solid #334155; color: #94a3b8; border-radius: 8px; font-weight: 600; cursor: pointer; text-align: center; }
+    .type-btn.active-spend { background: #e11d48; color: #fff; border-color: #e11d48; }
+    .type-btn.active-deposit { background: #16a34a; color: #fff; border-color: #16a34a; }
+    
+    select, input, button { padding: 12px; border-radius: 8px; border: 1px solid #334155; font-size: 1rem; }
+    select, input { background: #0f172a; color: #fff; width: 100%; }
+    input:focus, select:focus { outline: none; border-color: #38bdf8; }
+    button.submit-btn { background: #0284c7; color: #fff; font-weight: bold; border: none; cursor: pointer; margin-top: 4px; }
+    button.submit-btn:active { background: #0369a1; }
+
+    /* Recent Transactions List */
+    .history-title { font-size: 1.1rem; font-weight: 700; color: #cbd5e1; margin-top: 24px; margin-bottom: 12px; }
+    .tx-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+    .tx-item { background: #1e293b; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #334155; }
+    .tx-item.his { border-left-color: #38bdf8; }
+    .tx-item.her { border-left-color: #f472b6; }
+    .tx-desc { font-weight: 600; font-size: 0.95rem; }
+    .tx-user { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; }
+    .tx-amount { font-weight: 700; font-size: 1rem; }
+    .tx-amount.spend { color: #f43f5e; }
+    .tx-amount.deposit { color: #4ade80; }
+  </style>
+</head>
+<body>
+
+  <h1>Fun Money</h1>
+
+  <div class="grid">
+    <div class="card his">
+      <div class="card-title">Brent</div>
+      <div id="his-balance" class="balance">$0.00</div>
+    </div>
+    <div class="card her">
+      <div class="card-title">Ryann</div>
+      <div id="her-balance" class="balance">$0.00</div>
+    </div>
+  </div>
+
+  <form id="money-form">
+    <div class="type-toggle">
+      <div id="btn-spend" class="type-btn active-spend" onclick="setTxType('spend')">Spend</div>
+      <div id="btn-deposit" class="type-btn" onclick="setTxType('deposit')">Deposit</div>
+    </div>
+
+    <select id="user-select">
+      <option value="his">Brent's Account</option>
+      <option value="her">Ryann's Account</option>
+    </select>
+
+    <input type="number" id="amount" placeholder="Amount ($)" step="0.01" inputmode="decimal" required>
+    <input type="text" id="description" placeholder="Description (e.g. Video game, Target)" required>
+    
+    <button type="submit" class="submit-btn" id="submit-btn">Log Expense</button>
+  </form>
+
+  <div class="history-title">Recent Activity</div>
+  <ul id="tx-list" class="tx-list"></ul>
+
+  <script type="module" src="./app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
+  </script>
+</body>
+</html>
