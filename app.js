@@ -12,41 +12,26 @@ import {
   limit 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Initialize Firebase using global config loaded from config.js
+// Ensure config exists before initializing
+if (!window.firebaseConfig) {
+  console.error("firebaseConfig is missing! Check config.js loading.");
+}
+
 const app = initializeApp(window.firebaseConfig);
 const db = getFirestore(app);
 
-// DOM Elements
+// DOM Elements matching your exact HTML IDs
 const hisBalanceEl = document.getElementById("his-balance");
 const herBalanceEl = document.getElementById("her-balance");
-const transactionForm = document.getElementById("transaction-form");
-const accountSelect = document.getElementById("account-select");
-const amountInput = document.getElementById("amount-input");
-const descriptionInput = document.getElementById("description-input");
-const recentActivityEl = document.getElementById("recent-activity");
-const typeSpendBtn = document.getElementById("type-spend");
-const typeDepositBtn = document.getElementById("type-deposit");
+const userSelect = document.getElementById("user-select");
+const amountInput = document.getElementById("amount");
+const descriptionInput = document.getElementById("description");
+const txList = document.getElementById("tx-list");
+const form = document.querySelector("form");
 
-let currentType = "spend"; // Default transaction type
-
-// Toggle Spend / Deposit Buttons
-if (typeSpendBtn && typeDepositBtn) {
-  typeSpendBtn.addEventListener("click", () => {
-    currentType = "spend";
-    typeSpendBtn.classList.add("active");
-    typeDepositBtn.classList.remove("active");
-  });
-
-  typeDepositBtn.addEventListener("click", () => {
-    currentType = "deposit";
-    typeDepositBtn.classList.add("active");
-    typeSpendBtn.classList.remove("active");
-  });
-}
-
-// 1. Real-Time Balances Listener
-const balancesDocRef = doc(db, "accounts", "balances");
-onSnapshot(balancesDocRef, (docSnap) => {
+// 1. Balance Listener
+const balancesRef = doc(db, "accounts", "balances");
+onSnapshot(balancesRef, (docSnap) => {
   if (docSnap.exists()) {
     const data = docSnap.data();
     if (hisBalanceEl) hisBalanceEl.textContent = `$${(data.his || 0).toFixed(2)}`;
@@ -54,76 +39,49 @@ onSnapshot(balancesDocRef, (docSnap) => {
   }
 });
 
-// 2. Real-Time Recent Activity Listener
-const transactionsQuery = query(
-  collection(db, "transactions"),
-  orderBy("timestamp", "desc"),
-  limit(10)
-);
-
-onSnapshot(transactionsQuery, (snapshot) => {
-  if (!recentActivityEl) return;
-  recentActivityEl.innerHTML = "";
+// 2. Transactions Listener
+const txQuery = query(collection(db, "transactions"), orderBy("timestamp", "desc"), limit(10));
+onSnapshot(txQuery, (snapshot) => {
+  if (!txList) return;
+  txList.innerHTML = "";
 
   snapshot.forEach((docSnap) => {
     const item = docSnap.data();
-    const isHis = item.user === "his";
-    const accountLabel = isHis ? "BRENT'S ACCOUNT" : "RYANN'S ACCOUNT";
-    const accentClass = isHis ? "border-his" : "border-her";
-    
-    const isDeposit = item.type === "deposit";
-    const amountPrefix = isDeposit ? "+" : "-";
-    const amountClass = isDeposit ? "text-green" : "text-white";
-
-    const card = document.createElement("div");
-    card.className = `activity-card ${accentClass}`;
-    card.innerHTML = `
-      <div class="activity-info">
-        <div class="activity-title">${item.desc || "Transaction"}</div>
-        <div class="activity-account">${accountLabel}</div>
-      </div>
-      <div class="activity-amount ${amountClass}">
-        ${amountPrefix}$${parseFloat(item.amount).toFixed(2)}
-      </div>
-    `;
-    recentActivityEl.appendChild(card);
+    const li = document.createElement("li");
+    const accountName = item.user === "his" ? "Brent" : "Ryann";
+    li.textContent = `${accountName}: ${item.desc} - $${parseFloat(item.amount).toFixed(2)}`;
+    txList.appendChild(li);
   });
 });
 
-// 3. Handle Form Submission
-if (transactionForm) {
-  transactionForm.addEventListener("submit", async (e) => {
+// 3. Form Submit Listener
+if (form) {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const selectedAccount = accountSelect.value; // 'his' or 'her'
+    const selectedUser = userSelect.value;
     const rawAmount = parseFloat(amountInput.value);
     const description = descriptionInput.value.trim();
 
     if (isNaN(rawAmount) || rawAmount <= 0 || !description) return;
 
-    // Calculate balance change (+ for deposit, - for spend)
-    const balanceChange = currentType === "deposit" ? rawAmount : -rawAmount;
-
     try {
-      // Update balance atomically
-      await updateDoc(balancesDocRef, {
-        [selectedAccount]: increment(balanceChange)
+      // Deduct expense from chosen user
+      await updateDoc(balancesRef, {
+        [selectedUser]: increment(-rawAmount)
       });
 
-      // Add to transaction log
       await addDoc(collection(db, "transactions"), {
-        user: selectedAccount,
-        type: currentType,
+        user: selectedUser,
         amount: rawAmount,
         desc: description,
         timestamp: new Date()
       });
 
-      // Reset Form Inputs
       amountInput.value = "";
       descriptionInput.value = "";
     } catch (err) {
-      console.error("Error submitting transaction:", err);
+      console.error("Error logging transaction:", err);
     }
   });
 }
