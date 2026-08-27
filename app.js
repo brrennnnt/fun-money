@@ -4,12 +4,12 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBilt3cnrN3UtNY_DbwVi7LtHSnz8-x4CE",
+  authDomain: "fun-money-f4820.firebaseapp.com",
+  projectId: "fun-money-f4820",
+  storageBucket: "fun-money-f4820-firebasestorage.app",
+  messagingSenderId: "507596731983",
+  appId: "1:507596731983:web:f9713394294088ae865c3a"
 };
 
 const app = initializeApp(firebaseConfig);
