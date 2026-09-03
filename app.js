@@ -97,7 +97,7 @@ onSnapshot(balancesRef, (docSnap) => {
 });
 
 // 2. Real-time Transactions Listener (Initial 15)
-const txQuery = query(collection(db, "transactions"), orderBy("timestamp", "desc"), limit(15));
+const txQuery = query(collection(db, "transactions"), orderBy("timestamp", "desc"), limit(2));
 onSnapshot(txQuery, (snapshot) => {
   if (!txList) return;
   txList.innerHTML = "";
