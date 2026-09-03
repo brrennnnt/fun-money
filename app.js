@@ -105,7 +105,7 @@ onSnapshot(txQuery, (snapshot) => {
   if (!snapshot.empty) {
     lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
     if (loadMoreBtn) {
-      loadMoreBtn.style.display = snapshot.docs.length === 15 ? "block" : "none";
+      loadMoreBtn.style.display = snapshot.docs.length === 2 ? "block" : "none";
     }
   } else if (loadMoreBtn) {
     loadMoreBtn.style.display = "none";
