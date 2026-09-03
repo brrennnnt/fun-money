@@ -97,7 +97,7 @@ onSnapshot(balancesRef, (docSnap) => {
 });
 
 // 2. Real-time Transactions Listener (Initial 15)
-const txQuery = query(collection(db, "transactions"), orderBy("timestamp", "desc"), limit(2));
+const txQuery = query(collection(db, "transactions"), orderBy("timestamp", "desc"), limit(15));
 onSnapshot(txQuery, (snapshot) => {
   if (!txList) return;
   txList.innerHTML = "";
@@ -105,7 +105,7 @@ onSnapshot(txQuery, (snapshot) => {
   if (!snapshot.empty) {
     lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
     if (loadMoreBtn) {
-      loadMoreBtn.style.display = snapshot.docs.length === 2 ? "block" : "none";
+      loadMoreBtn.style.display = snapshot.docs.length === 15 ? "block" : "none";
     }
   } else if (loadMoreBtn) {
     loadMoreBtn.style.display = "none";
